@@ -115,12 +115,7 @@ td{padding:.8rem 1.25rem;border-top:1px solid var(--border-color)}
       </div>
       <div class="card-body"><div class="chart-wrapper"><canvas id="mainChart"></canvas></div></div>
     </div>
-    <div class="dashboard-card">
-      <div class="card-header"><h3>Heart-Rate Zones</h3></div>
-      <div class="card-body"><div class="doughnut-container"><canvas id="zoneChart"></canvas></div><div class="legend" id="zoneLegend"></div></div>
-    </div>
   </div>
-
   <div class="dashboard-card">
     <div class="card-header"><h3>Sensor Reading Log</h3>
       <div class="actions"><input id="tableFilter" placeholder="Filter log…"><button class="btn btn-primary" id="logBtn">+ Log reading</button></div>
@@ -179,9 +174,7 @@ function buildCharts(){
     {label:'Temp (°C)',data:s.t,borderColor:'#6366f1',tension:.4,yAxisID:'y1',pointRadius:0}]},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
       scales:{y:{position:'left',min:50,max:120},y1:{position:'right',min:35,max:39,grid:{drawOnChartArea:false}}},plugins:{legend:{position:'bottom'}}}});
-  zone=new Chart($('zoneChart'),{type:'doughnut',data:{labels:['Resting','Fat burn','Cardio','Peak'],datasets:[{data:state.zones,backgroundColor:['#10b981','#6366f1','#f59e0b','#ef4444'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false}}}});
-  recolor();drawLegend();
+  recolor();
 }
 function recolor(){
   const c=css('--text-secondary'),g=css('--border-color');
@@ -190,10 +183,7 @@ function recolor(){
   Object.values(main.options.scales).forEach(s=>{s.ticks={color:c};if(s.grid&&s.grid.drawOnChartArea===false)return;s.grid={color:g}});
   main.options.plugins.legend.labels={color:c};main.update();
 }
-function drawLegend(){
-  const cols=['#10b981','#6366f1','#f59e0b','#ef4444'],names=['Resting','Fat burn','Cardio','Peak'],tot=state.zones.reduce((a,b)=>a+b,0);
-  $('zoneLegend').innerHTML=names.map((n,i)=>`<div><span><i style="background:${cols[i]}"></i>${n}</span><b>${Math.round(state.zones[i]/tot*100)}%</b></div>`).join('');
-}
+
 $('rangeTabs').onclick=e=>{
   const b=e.target.closest('.tab');if(!b)return;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));b.classList.add('active');
@@ -213,7 +203,6 @@ function ingest(p){
   $('coCard').className='metric-card co-card '+(c[0]==='ok'?'':c[0]);
   $('nodeName').textContent=p.node;$('rssiVal').textContent=p.rssi+' dBm';$('lastPacket').textContent=new Date().toLocaleTimeString();
   spark('sparkHr',state.hr,'#ef4444');spark('sparkTemp',state.temp,'#6366f1');spark('sparkCo',state.co,c[0]==='danger'?'#ef4444':c[0]==='caution'?'#f59e0b':'#10b981');
-  const zi=hr<60?0:hr<100?1:hr<140?2:3;state.zones[zi]+=1;zone.data.datasets[0].data=state.zones;zone.update('none');drawLegend();
   if(c[0]==='danger'&&!state.alerted){state.alerted=true;toast(`⚠ High CO: ${co} ppm on ${p.node}. Ventilate and leave the area.`)}
   if(c[0]!=='danger')state.alerted=false;
   state.log.unshift({node:p.node,rssi:p.rssi,hr,temp,co,status:worst(h,t,c),time:new Date().toLocaleTimeString()});
